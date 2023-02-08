@@ -1,9 +1,10 @@
 package keeper
 
 import (
+	"interchange/x/dex/types"
+
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"interchange/x/dex/types"
 )
 
 // SetSellOrderBook set a specific sellOrderBook in the store from its index
@@ -60,4 +61,8 @@ func (k Keeper) GetAllSellOrderBook(ctx sdk.Context) (list []types.SellOrderBook
 	}
 
 	return
+}
+
+func (s *SellOrderBook) AppendOrder(creator string, amount int32, price int32) (int32, error) {
+	return s.Book.appendOrder(creator, amount, price, Decreasing)
 }

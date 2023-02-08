@@ -3,12 +3,13 @@ package keeper
 import (
 	"errors"
 
+	"interchange/x/dex/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v6/modules/core/24-host"
-	"interchange/x/dex/types"
 )
 
 // TransmitBuyOrderPacket transmits the packet over IBC with the specified source port and source channel
@@ -79,4 +80,39 @@ func (k Keeper) OnTimeoutBuyOrderPacket(ctx sdk.Context, packet channeltypes.Pac
 	// TODO: packet timeout logic
 
 	return nil
+}
+
+func (b *BuyOrderBook) FillSellOrder(order Order) (
+	remainingSellOrder Order,
+	liquidated []Order,
+	gain int32,
+	filled bool,
+) {
+	var liquidatedList []Order
+	totalGain := int32(0)
+	remainingSellOrder = order
+
+	// Liquidate as long as there is match
+	for {
+		var match bool
+		var liquidation Order
+		remainingSellOrder, liquidation, gain, match, filled = b.LiquidateFromSellOrder(
+			remainingSellOrder,
+		)
+		if !match {
+			break
+		}
+
+		// Update gains
+		totalGain += gain
+
+		// Update liquidated
+		liquidatedList = append(liquidatedList, liquidation)
+
+		if filled {
+			break
+		}
+	}
+
+	return remainingSellOrder, liquidatedList, totalGain, filled
 }

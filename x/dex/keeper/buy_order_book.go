@@ -1,9 +1,10 @@
 package keeper
 
 import (
+	"interchange/x/dex/types"
+
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"interchange/x/dex/types"
 )
 
 // SetBuyOrderBook set a specific buyOrderBook in the store from its index
@@ -60,4 +61,52 @@ func (k Keeper) GetAllBuyOrderBook(ctx sdk.Context) (list []types.BuyOrderBook) 
 	}
 
 	return
+}
+
+func (b *BuyOrderBook) LiquidateFromSellOrder(order Order) (
+	remainingSellOrder Order,
+	liquidatedBuyOrder Order,
+	gain int32,
+	match bool,
+	filled bool,
+) {
+	remainingSellOrder = order
+
+	// No match if no order
+	orderCount := len(b.Book.Orders)
+	if orderCount == 0 {
+		return order, liquidatedBuyOrder, gain, false, false
+	}
+
+	// Check if match
+	highestBid := b.Book.Orders[orderCount-1]
+	if order.Price > highestBid.Price {
+		return order, liquidatedBuyOrder, gain, false, false
+	}
+
+	liquidatedBuyOrder = *highestBid
+
+	// Check if sell order can be entirely filled
+	if highestBid.Amount >= order.Amount {
+		remainingSellOrder.Amount = 0
+		liquidatedBuyOrder.Amount = order.Amount
+		gain = order.Amount * highestBid.Price
+
+		// Remove the highest bid if it has been entirely liquidated
+		highestBid.Amount -= order.Amount
+		if highestBid.Amount == 0 {
+			b.Book.Orders = b.Book.Orders[:orderCount-1]
+		} else {
+			b.Book.Orders[orderCount-1] = highestBid
+		}
+
+		return remainingSellOrder, liquidatedBuyOrder, gain, true, true
+	}
+
+	// Not entirely filled
+	gain = highestBid.Amount * highestBid.Price
+	b.Book.Orders = b.Book.Orders[:orderCount-1]
+	remainingSellOrder.Amount -= highestBid.Amount
+
+	return remainingSellOrder, liquidatedBuyOrder, gain, true, false
 }
