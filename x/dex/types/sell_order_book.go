@@ -93,3 +93,7 @@ func (s *SellOrderBook) LiquidateFromBuyOrder(order Order) (
 
 	return remainingBuyOrder, liquidatedSellOrder, purchase, true, false
 }
+
+func (s *SellOrderBook) AppendOrder(creator string, amount int32, price int32) (int32, error) {
+	return s.Book.appendOrder(creator, amount, price, Decreasing)
+}

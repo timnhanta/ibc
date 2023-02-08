@@ -200,38 +200,3 @@ func (k Keeper) OnTimeoutBuyOrderPacket(ctx sdk.Context, packet channeltypes.Pac
 
 	return nil
 }
-
-func (b *BuyOrderBook) FillSellOrder(order Order) (
-	remainingSellOrder Order,
-	liquidated []Order,
-	gain int32,
-	filled bool,
-) {
-	var liquidatedList []Order
-	totalGain := int32(0)
-	remainingSellOrder = order
-
-	// Liquidate as long as there is match
-	for {
-		var match bool
-		var liquidation Order
-		remainingSellOrder, liquidation, gain, match, filled = b.LiquidateFromSellOrder(
-			remainingSellOrder,
-		)
-		if !match {
-			break
-		}
-
-		// Update gains
-		totalGain += gain
-
-		// Update liquidated
-		liquidatedList = append(liquidatedList, liquidation)
-
-		if filled {
-			break
-		}
-	}
-
-	return remainingSellOrder, liquidatedList, totalGain, filled
-}

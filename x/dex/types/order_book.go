@@ -81,6 +81,27 @@ func (book OrderBook) GetNextOrderID() int32 {
 	return book.IdCount
 }
 
+func (book OrderBook) GetOrderFromID(id int32) (Order, error) {
+	for _, order := range book.Orders {
+		if order.Id == id {
+			return *order, nil
+		}
+	}
+
+	return Order{}, ErrOrderNotFound
+}
+
+func (book *OrderBook) RemoveOrderFromID(id int32) error {
+	for i, order := range book.Orders {
+		if order.Id == id {
+			book.Orders = append(book.Orders[:i], book.Orders[i+1:]...)
+			return nil
+		}
+	}
+
+	return ErrOrderNotFound
+}
+
 const (
 	MaxAmount = int32(100000)
 	MaxPrice  = int32(100000)

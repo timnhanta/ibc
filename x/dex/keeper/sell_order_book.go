@@ -62,7 +62,3 @@ func (k Keeper) GetAllSellOrderBook(ctx sdk.Context) (list []types.SellOrderBook
 
 	return
 }
-
-func (s *SellOrderBook) AppendOrder(creator string, amount int32, price int32) (int32, error) {
-	return s.Book.appendOrder(creator, amount, price, Decreasing)
-}
